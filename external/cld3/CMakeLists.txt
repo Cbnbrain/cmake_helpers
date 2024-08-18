@@ -13,13 +13,13 @@ init_target(external_cld3_bundled "(external)")
 set(cld3_loc ${third_party_loc}/cld3)
 set(cld3_src ${cld3_loc}/src)
 
-set(gen_loc ${cld3_loc}/build/gen)
+set(gen_loc ${CMAKE_CURRENT_BINARY_DIR}/gen)
 set(gen_dst ${gen_loc}/cld_3/protos)
 
-if (DESKTOP_APP_USE_PACKAGED)
-    find_package(Protobuf)
-    if (NOT Protobuf_FOUND)
-        find_package(protobuf REQUIRED CONFIG)
+if (DESKTOP_APP_USE_PACKAGED OR LINUX)
+    find_package(protobuf CONFIG)
+    if (NOT protobuf_FOUND)
+        find_package(Protobuf MODULE REQUIRED)
     endif()
     set(protoc_executable protobuf::protoc)
     set(protobuf_lib protobuf::libprotobuf-lite)
@@ -30,9 +30,6 @@ elseif (WIN32)
 else()
     set(protoc_executable ${libs_loc}/protobuf/build/protoc)
     set(protobuf_lib ${libs_loc}/protobuf/build/libprotobuf-lite.a)
-    if (LINUX)
-        target_compile_options(external_cld3_bundled PRIVATE -Wno-implicit-fallthrough)
-    endif()
 endif()
 if (PROTOBUF_PROTOC_EXECUTABLE)
     set(protoc_executable ${PROTOBUF_PROTOC_EXECUTABLE})
@@ -87,13 +84,23 @@ PRIVATE
     script_span/fixunicodevalue.cc
 )
 
+target_compile_definitions(external_cld3_bundled
+PUBLIC
+    $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
+)
+
+target_compile_options_if_exists(external_cld3_bundled
+PRIVATE
+    -Wno-implicit-fallthrough
+)
+
 target_include_directories(external_cld3_bundled
 PUBLIC
     ${cld3_src}
     ${gen_loc}
 )
 
-if (NOT DESKTOP_APP_USE_PACKAGED)
+if (NOT DESKTOP_APP_USE_PACKAGED AND NOT LINUX)
     target_include_directories(external_cld3_bundled
     PUBLIC
         ${libs_loc}/protobuf/src

@@ -22,19 +22,6 @@ function(init_target target_name) # init_target(my_target [cxx_std_..] folder_na
         endif()
     endforeach()
     target_compile_features(${target_name} PRIVATE ${standard})
-
-    if (WIN32 AND DESKTOP_APP_SPECIAL_TARGET)
-        set_property(TARGET ${target_name} APPEND_STRING PROPERTY STATIC_LIBRARY_OPTIONS "$<IF:$<CONFIG:Debug>,,/LTCG>")
-    endif()
-
-    if (LINUX AND NOT DESKTOP_APP_DISABLE_SCUDO AND NOT target_name STREQUAL external_scudo)
-        add_dependencies(${target_name} desktop-app::external_scudo)
-        target_link_options(${target_name}
-        PRIVATE
-            -Wl,--push-state,--whole-archive,$<TARGET_FILE:desktop-app::external_scudo>,--pop-state
-        )
-    endif()
-
     target_link_libraries(${target_name} PRIVATE desktop-app::common_options)
     set_target_properties(${target_name} PROPERTIES
         XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK YES
@@ -43,10 +30,20 @@ function(init_target target_name) # init_target(my_target [cxx_std_..] folder_na
         MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
     )
     if (DESKTOP_APP_SPECIAL_TARGET)
-        set_target_properties(${target_name} PROPERTIES
-            XCODE_ATTRIBUTE_GCC_OPTIMIZATION_LEVEL $<IF:$<CONFIG:Debug>,0,fast>
-            XCODE_ATTRIBUTE_LLVM_LTO $<IF:$<CONFIG:Debug>,NO,YES>
-        )
+        if (WIN32)
+            set_property(TARGET ${target_name} APPEND_STRING PROPERTY STATIC_LIBRARY_OPTIONS "$<IF:$<CONFIG:Debug>,,/LTCG>")
+        elseif (APPLE)
+            set_target_properties(${target_name} PROPERTIES
+                XCODE_ATTRIBUTE_GCC_OPTIMIZATION_LEVEL $<IF:$<CONFIG:Debug>,0,fast>
+                XCODE_ATTRIBUTE_LLVM_LTO $<IF:$<CONFIG:Debug>,NO,YES>
+            )
+        else()
+            set_target_properties(${target_name} PROPERTIES
+                INTERPROCEDURAL_OPTIMIZATION_RELEASE True
+                INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO True
+                INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL True
+            )
+        endif()
     endif()
 endfunction()
 

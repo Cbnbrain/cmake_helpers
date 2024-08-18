@@ -23,7 +23,9 @@ if (WIN32)
     INTERFACE
         ${libs_loc}/local/include
     )
-    if (build_win64)
+    if (build_winarm)
+        set(libvpx_release_folder ARM64)
+    elseif (build_win64)
         set(libvpx_release_folder x64)
     else()
         set(libvpx_release_folder Win32)
@@ -42,10 +44,6 @@ elseif (APPLE)
         IMPORTED_LOCATION ${libs_loc}/local/lib/libvpx.a
     )
 else()
-    target_include_directories(external_vpx SYSTEM
-    INTERFACE
-        /usr/local/include
-    )
     find_library(DESKTOP_APP_VPX_LIBRARIES libvpx.a REQUIRED)
     set_target_properties(external_vpx PROPERTIES
         IMPORTED_LOCATION "${DESKTOP_APP_VPX_LIBRARIES}"

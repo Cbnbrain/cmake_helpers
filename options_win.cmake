@@ -24,25 +24,39 @@ INTERFACE
     UNICODE
     _UNICODE
 )
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     target_compile_options(common_options
     INTERFACE
         /permissive-
         # /Qspectre
         /utf-8
-        /W1
-        /WX
+        /W4
         /MP     # Enable multi process build.
         /EHsc   # Catch C++ exceptions only, extern C functions never throw a C++ exception.
-        /w14834 # [[nodiscard]]
         /w15038 # wrong initialization order
         /w14265 # class has virtual functions, but destructor is not virtual
-        /w14101 # 'identifier' : unreferenced local variable
-        /wd4068 # Disable "warning C4068: unknown pragma"
-        /wd4267 # 'initializing': conversion from 'size_t' to 'int', possible loss of data.
-        /wd4244 # '=': conversion from 'size_t' to 'int', possible loss of data.
-        /Zc:wchar_t- # don't tread wchar_t as builtin type
+        /wd4018 # 'token' : signed/unsigned mismatch
+        /wd4100 # 'identifier' : unreferenced formal parameter
+        /wd4242 # 'identifier': conversion from 'type1' to 'type2', possible loss of data
+        /wd4244 # 'argument' : conversion from 'type1' to 'type2', possible loss of data
+        /wd4245 # 'conversion' : conversion from 'type1' to 'type2', signed/unsigned mismatch
+        /wd4267 # 'var' : conversion from 'size_t' to 'type', possible loss of data
+        /wd4305 # 'conversion': truncation from 'type1' to 'type2'
+        /wd4324 # 'structname': structure was padded due to alignment specifier
+        /wd4389 # 'equality-operator' : signed/unsigned mismatch
+        /wd4456 # declaration of 'identifier' hides previous local declaration
+        /wd4457 # declaration of 'identifier' hides function parameter
+        /wd4458 # declaration of 'identifier' hides class member
+        /wd4459 # declaration of 'identifier' hides global declaration
+        /wd4611 # interaction between 'function' and C++ object destruction is non-portable
+        /wd4702 # unreachable code
         /Zi
+
+        # Taken from Qt 6.
+        # https://developercommunity.visualstudio.com/content/problem/139261/msvc-incorrectly-defines-cplusplus.html
+        # No support for the flag in upstream CMake as of 3.17.
+        # https://gitlab.kitware.com/cmake/cmake/issues/18837
+        /Zc:__cplusplus
     )
 
     target_link_options(common_options
@@ -63,7 +77,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         )
     endif()
 
-    if (build_win64)
+    if (build_win64 OR build_winarm)
         target_compile_options(common_options
         INTERFACE
             /bigobj # scheme.cpp has too many sections.
@@ -82,6 +96,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if (DESKTOP_APP_SPECIAL_TARGET)
         target_compile_options(common_options
         INTERFACE
+            /WX
             $<IF:$<CONFIG:Debug>,,/GL>
         )
         target_link_options(common_options
@@ -90,7 +105,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             $<IF:$<CONFIG:Debug>,,/LTCGOUT:>
         )
     endif()
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
     target_compile_definitions(common_options
     INTERFACE
         WINVER=0x0601
@@ -145,6 +160,7 @@ INTERFACE
     Wtsapi32
     Crypt32
     Propsys
+    Bcrypt
 )
 
 if (build_winstore)

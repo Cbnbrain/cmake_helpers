@@ -20,6 +20,7 @@ target_compile_definitions(external_webrtc
 INTERFACE
     WEBRTC_ENABLE_PROTOBUF=0
     WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE
+    RTC_ENABLE_H265
     RTC_ENABLE_VP9
     HAVE_SCTP
     WEBRTC_USE_H264
@@ -38,6 +39,7 @@ if (WIN32)
     target_compile_definitions(external_webrtc
     INTERFACE
         WEBRTC_WIN
+        RTC_ENABLE_WIN_WGC
     )
 else()
     set(webrtc_lib_prefix lib)
@@ -63,7 +65,7 @@ else()
     )
 endif()
 
-if (NOT EXISTS ${libs_loc}/tg_owt/out/Debug/${webrtc_lib_prefix}tg_owt${webrtc_lib_suffix})
+if (NOT WIN32 AND NOT EXISTS ${libs_loc}/tg_owt/out/Debug/${webrtc_lib_prefix}tg_owt${webrtc_lib_suffix})
     set(webrtc_build_loc ${libs_loc}/tg_owt/out/Release)
     target_compile_definitions(external_webrtc INTERFACE $<$<CONFIG:Debug>:NDEBUG>)
 endif()
@@ -78,7 +80,16 @@ INTERFACE
 set(webrtc_libs
     ${webrtc_lib_prefix}tg_owt
 )
-if (APPLE)
+if (WIN32)
+    target_link_libraries(external_webrtc
+    INTERFACE
+        ${libs_loc}/openh264/builddir-$<IF:$<CONFIG:Debug>,debug,release>/libopenh264.a
+    )
+elseif (APPLE)
+    target_link_libraries(external_webrtc
+    INTERFACE
+        ${libs_loc}/local/lib/libopenh264.a
+    )
     target_include_directories(external_webrtc SYSTEM
     INTERFACE
         ${webrtc_loc}/sdk/objc
@@ -123,6 +134,7 @@ else()
         Xrandr
         Xrender
         Xtst
+        openh264
     )
     target_link_libraries(external_webrtc
     INTERFACE
